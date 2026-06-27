@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Informes VD</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --primary: #0f172a;
+    --primary-light: #1e293b;
+    --accent: #3b82f6;
+    --accent-light: #dbeafe;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+    --shadow-lg: 0 4px 16px rgba(15,23,42,0.08);
+  }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+
+  .app {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    width: 42px; height: 42px;
+    background: var(--primary);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo svg { fill: white; width: 22px; height: 22px; }
+
+  h1 { font-size: 1.35rem; font-weight: 700; color: var(--primary); line-height: 1.3; letter-spacing: -0.01em; }
+  h1 span { display: block; font-size: 0.82rem; font-weight: 400; color: var(--text-muted); margin-top: 2px; letter-spacing: 0; }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: #f8faff;
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 2.2rem; margin-bottom: 10px; opacity: 0.6; }
+  .drop-title { font-size: 0.95rem; font-weight: 600; color: var(--primary); }
+  .drop-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+  .file-loaded {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--success-bg); border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 16px;
+    margin-top: 14px; display: none;
+  }
+  .file-loaded .icon { font-size: 1.3rem; }
+  .file-loaded .info { flex: 1; }
+  .file-loaded .name { font-weight: 600; font-size: 0.88rem; color: var(--success); }
+  .file-loaded .meta { font-size: 0.78rem; color: var(--text-muted); }
+
+  .section-title {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .filters-row {
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+    margin-bottom: 18px;
+  }
+
+  .filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 170px; flex: 1; }
+  .filter-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+  .filter-group select {
+    border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 11px;
+    font-size: 0.85rem; color: var(--text); background: var(--bg);
+    cursor: pointer; transition: border-color 0.15s; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+  }
+  .filter-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+  .cargues-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px; margin-top: 12px;
+  }
+  .cargue-chip {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 8px 11px; cursor: pointer;
+    font-size: 0.82rem; font-weight: 500; color: var(--text);
+    transition: all 0.15s; user-select: none;
+  }
+  .cargue-chip:hover { border-color: #94a3b8; }
+  .cargue-chip input[type=checkbox] { display: none; }
+  .cargue-chip.checked {
+    background: var(--accent-light); border-color: var(--accent); color: var(--primary);
+  }
+  .cargue-chip .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #cbd5e1; flex-shrink: 0; transition: background 0.15s;
+  }
+  .cargue-chip.checked .dot { background: var(--accent); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+
+  .btn {
+    padding: 10px 20px; border-radius: 8px; font-size: 0.85rem;
+    font-weight: 600; cursor: pointer; border: none;
+    display: flex; align-items: center; gap: 7px; transition: all 0.15s;
+    letter-spacing: -0.01em;
+  }
+  .btn-primary {
+    background: var(--primary); color: white;
+  }
+  .btn-primary:hover { background: var(--primary-light); box-shadow: var(--shadow); }
+  .btn-accent {
+    background: var(--accent); color: white;
+  }
+  .btn-accent:hover { background: #2563eb; box-shadow: var(--shadow); }
+  .btn-outline {
+    background: transparent; color: var(--primary);
+    border: 1.5px solid var(--border);
+  }
+  .btn-outline:hover { background: var(--bg); border-color: #94a3b8; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .progress-wrap { margin-top: 18px; display: none; }
+  .progress-bar-bg {
+    height: 6px; background: var(--border); border-radius: 99px; overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%; background: var(--accent);
+    border-radius: 99px; transition: width 0.3s ease;
+    width: 0%;
+  }
+  .progress-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; }
+
+  .preview-section { display: none; }
+  .preview-section .section-title { margin-top: 24px; }
+
+  table.preview-table {
+    width: 100%; border-collapse: collapse; font-size: 0.82rem;
+  }
+  table.preview-table th {
+    background: var(--primary); color: white; padding: 9px 12px;
+    text-align: left; font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  table.preview-table td {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  table.preview-table tr:last-child td { border-bottom: none; }
+  table.preview-table tr:nth-child(even) td { background: #f8fafc; }
+  table.preview-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.preview-table .um { font-weight: 600; color: var(--accent); }
+  table.preview-table .total-row td {
+    font-weight: 700; background: #f1f5f9 !important; border-top: 2px solid var(--primary);
+  }
+
+  .report-nav {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .nav-chip {
+    padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 500;
+    cursor: pointer; border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text); transition: all 0.15s;
+  }
+  .nav-chip:hover { border-color: #94a3b8; }
+  .nav-chip.active {
+    background: var(--primary); color: white; border-color: var(--primary);
+  }
+
+  .report-header {
+    background: var(--primary); color: white;
+    border-radius: 8px 8px 0 0; padding: 14px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .report-header .cargue-label { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
+  .report-header .summary { font-size: 0.8rem; opacity: 0.75; }
+
+  .table-wrap { overflow-x: auto; border-radius: 0 0 8px 8px; border: 1px solid var(--border); border-top: none; }
+
+  .empty { text-align: center; padding: 40px; color: var(--text-muted); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--primary); color: white;
+    padding: 12px 22px; border-radius: 10px;
+    font-size: 0.85rem; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 999;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 600px) {
+    .filters-row { flex-direction: column; }
+    .actions { flex-direction: column; }
+    .btn { justify-content: center; }
+    .card { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm-1 1.5L18.5 9H13zM6 20V4h5v7h7v9z"/></svg>
+    </div>
+    <h1>Generador de Informes VD <span>Sube Sheet1 → genera PDF por cargue automáticamente</span></h1>
+  </header>
+
+  <!-- PASO 1: Cargar archivo -->
+  <div class="card">
+    <div class="section-title">1 · Cargar archivo</div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+      <div class="drop-icon">📂</div>
+      <div class="drop-title">Arrastra el archivo aquí o haz clic para seleccionar</div>
+      <div class="drop-sub">Archivo Excel (Sheet1) · .xlsx / .xls</div>
+    </div>
+    <div class="file-loaded" id="fileLoaded">
+      <div class="icon">✅</div>
+      <div class="info">
+        <div class="name" id="fileName"></div>
+        <div class="meta" id="fileMeta"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 2: Configurar -->
+  <div class="card" id="configCard" style="display:none">
+    <div class="section-title">2 · Seleccionar cargues a incluir</div>
+
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Filtrar por Estado</label>
+        <select id="estadoFilter">
+          <option value="">Todos los estados</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Filtrar por Vendedor</label>
+        <select id="vendedorFilter">
+          <option value="">Todos los vendedores</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span style="font-size:0.82rem; color:var(--text-muted);">Cargues disponibles</span>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline" style="padding:5px 12px; font-size:0.78rem;" onclick="selectAll()">Seleccionar todos</button>
+        <button class="btn btn-outline" style="padding:5px 12px; font-size:0.78rem;" onclick="deselectAll()">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="cargues-grid" id="carguesGrid"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="previewBtn" onclick="generatePreview()" disabled>
+        👁 Vista previa
+      </button>
+      <button class="btn btn-accent" id="pdfBtn" onclick="generatePDF()" disabled>
+        📄 Generar PDF único
+      </button>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="progress-label" id="progressLabel">Procesando...</div>
+    </div>
+  </div>
+
+  <!-- PASO 3: Vista previa -->
+  <div class="card preview-section" id="previewCard">
+    <div class="section-title">3 · Vista previa de informes</div>
+    <div class="report-nav" id="reportNav"></div>
+    <div id="reportView"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let rawData = [];
+let allCargues = [];
+let selectedCargues = new Set();
+
+// Drag & Drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  handleFile(e.dataTransfer.files[0]);
+});
+document.getElementById('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+
+      // Look for Sheet1 or first sheet
+      let sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'sheet1') || wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+      // Row 0 = headers
+      const headers = data[0].map(h => h ? String(h).trim() : '');
+      const rows = data.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = row[i]; });
+        return obj;
+      }).filter(r => r['Cargue'] && r['Cargue'] !== null && String(r['Cargue']).trim() !== '');
+
+      rawData = rows;
+
+      // File info
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileMeta').textContent = `${rows.length} filas · Hoja: ${sheetName} · ${wb.SheetNames.length} hojas en total`;
+      document.getElementById('fileLoaded').style.display = 'flex';
+
+      // Populate filters
+      const estados = [...new Set(rows.map(r => r['Estado movto.']).filter(Boolean))].sort();
+      const vendedores = [...new Set(rows.map(r => r['Nombre vendedor']).filter(Boolean))].sort();
+
+      const estadoSel = document.getElementById('estadoFilter');
+      estadoSel.innerHTML = '<option value="">Todos los estados</option>' + estados.map(e => `<option>${e}</option>`).join('');
+
+      const vendSel = document.getElementById('vendedorFilter');
+      vendSel.innerHTML = '<option value="">Todos los vendedores</option>' + vendedores.map(v => `<option>${v}</option>`).join('');
+
+      estadoSel.addEventListener('change', refreshCargues);
+      vendSel.addEventListener('change', refreshCargues);
+
+      refreshCargues();
+      document.getElementById('configCard').style.display = 'block';
+      showToast('✅ Archivo cargado correctamente');
+    } catch(err) {
+      showToast('❌ Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function getFilteredData() {
+  const estado = document.getElementById('estadoFilter').value;
+  const vend = document.getElementById('vendedorFilter').value;
+  return rawData.filter(r => {
+    if (estado && r['Estado movto.'] !== estado) return false;
+    if (vend && r['Nombre vendedor'] !== vend) return false;
+    return true;
+  });
+}
+
+function refreshCargues() {
+  const filtered = getFilteredData();
+  allCargues = [...new Set(filtered.map(r => String(r['Cargue']).trim()))].sort();
+  selectedCargues = new Set(allCargues);
+  renderChips();
+}
+
+function renderChips() {
+  const grid = document.getElementById('carguesGrid');
+  if (allCargues.length === 0) {
+    grid.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:8px">No hay cargues con los filtros seleccionados</div>';
+    document.getElementById('previewBtn').disabled = true;
+    document.getElementById('pdfBtn').disabled = true;
+    return;
+  }
+  grid.innerHTML = allCargues.map(c => `
+    <label class="cargue-chip ${selectedCargues.has(c) ? 'checked' : ''}" id="chip-${c}">
+      <input type="checkbox" ${selectedCargues.has(c) ? 'checked' : ''} onchange="toggleCargue('${c}', this.checked)">
+      <div class="dot"></div>${c}
+    </label>
+  `).join('');
+  updateButtons();
+}
+
+function toggleCargue(c, checked) {
+  if (checked) selectedCargues.add(c);
+  else selectedCargues.delete(c);
+  const chip = document.getElementById('chip-' + c);
+  if (chip) chip.classList.toggle('checked', checked);
+  updateButtons();
+}
+
+function selectAll() { allCargues.forEach(c => selectedCargues.add(c)); renderChips(); }
+function deselectAll() { selectedCargues.clear(); renderChips(); }
+
+function updateButtons() {
+  const ok = selectedCargues.size > 0;
+  document.getElementById('previewBtn').disabled = !ok;
+  document.getElementById('pdfBtn').disabled = !ok;
+}
+
+function buildReport(cargue) {
+  const filtered = getFilteredData().filter(r => String(r['Cargue']).trim() === cargue);
+
+  // Group by UM + Desc. item, sum Cant. comprom. and Peso
+  const groups = {};
+  filtered.forEach(r => {
+    const um = r['U.M.'] || '';
+    const desc = r['Desc. item'] || '';
+    const key = `${um}|||${desc}`;
+    if (!groups[key]) groups[key] = { um, desc, cant: 0, peso: 0 };
+    groups[key].cant += Number(r['Cant. comprom.'] || 0);
+    groups[key].peso += Number(r['Peso'] || 0);
+  });
+
+  // Sort by UM then desc
+  const rows = Object.values(groups).sort((a, b) => {
+    if (a.um < b.um) return -1; if (a.um > b.um) return 1;
+    return a.desc.localeCompare(b.desc);
+  });
+
+  const totalCant = rows.reduce((s, r) => s + r.cant, 0);
+  const totalPeso = rows.reduce((s, r) => s + r.peso, 0);
+
+  return { cargue, rows, totalCant, totalPeso, rawCount: filtered.length };
+}
+
+function generatePreview() {
+  const cargues = [...selectedCargues].sort();
+  const reports = cargues.map(buildReport);
+
+  const nav = document.getElementById('reportNav');
+  nav.innerHTML = reports.map(r => `<div class="nav-chip" onclick="showReport('${r.cargue}', this)">${r.cargue} <span style="opacity:0.6;font-size:0.73rem">(${r.rows.length})</span></div>`).join('');
+
+  // Show first
+  showReport(reports[0].cargue, nav.children[0]);
+
+  // Cache reports
+  window._reports = {};
+  reports.forEach(r => { window._reports[r.cargue] = r; });
+
+  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showReport(cargue, chipEl) {
+  document.querySelectorAll('.nav-chip').forEach(c => c.classList.remove('active'));
+  if (chipEl) chipEl.classList.add('active');
+
+  const r = window._reports[cargue];
+  if (!r) return;
+
+  const view = document.getElementById('reportView');
+  let prevUM = null;
+
+  const rowsHTML = r.rows.map(row => {
+    const showUM = row.um !== prevUM;
+    prevUM = row.um;
+    return `<tr>
+      <td class="um">${showUM ? row.um : ''}</td>
+      <td>${row.desc}</td>
+      <td class="num">${row.cant}</td>
+      <td class="num">${row.peso % 1 === 0 ? row.peso : row.peso.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  view.innerHTML = `
+    <div class="report-header">
+      <div>
+        <div class="cargue-label">📦 Cargue: ${r.cargue}</div>
+        <div class="summary">CONSOLIDADO · ${r.rows.length} ítems · ${r.rawCount} líneas de pedido</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:1.1rem;font-weight:700">${r.totalCant} unid.</div>
+        <div style="font-size:0.78rem;opacity:0.8">${r.totalPeso % 1 === 0 ? r.totalPeso : r.totalPeso.toFixed(2)} kg total</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="preview-table">
+        <thead><tr><th>U.M.</th><th>Desc. ítem</th><th class="num">Cant. comprom.</th><th class="num">Peso</th></tr></thead>
+        <tbody>
+          ${rowsHTML}
+          <tr class="total-row">
+            <td colspan="2">Total general</td>
+            <td class="num">${r.totalCant}</td>
+            <td class="num">${r.totalPeso % 1 === 0 ? r.totalPeso : r.totalPeso.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const cargues = [...selectedCargues].sort();
+
+  document.getElementById('progressWrap').style.display = 'block';
+  setProgress(0, 'Iniciando generación...');
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 7;
+
+  for (let i = 0; i < cargues.length; i++) {
+    const c = cargues[i];
+    setProgress(Math.round((i / cargues.length) * 90), `Procesando cargue ${c} (${i+1}/${cargues.length})...`);
+
+    if (i > 0) doc.addPage();
+    const r = buildReport(c);
+
+    // Header block (eco: no solid fill, just a bottom border line)
+    doc.setDrawColor(80);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 11, pageW - margin, 11);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(30);
+    doc.text(`Cargue: ${r.cargue}`, margin, 9);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text('CONSOLIDADO', margin, 13);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text(`${r.totalCant} unid.`, pageW - margin, 9, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    const pesoStr = r.totalPeso % 1 === 0 ? String(r.totalPeso) : r.totalPeso.toFixed(2);
+    doc.text(`${pesoStr} kg total`, pageW - margin, 13, { align: 'right' });
+
+    // Fecha/hora de impresión
+    doc.setTextColor(100);
+    doc.setFontSize(6.5);
+    const now = new Date();
+    doc.text(`Generado: ${now.toLocaleDateString('es-CO')} ${now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`, margin, 18);
+
+    // Table
+    const tableRows = [];
+    let prevUM = null;
+    r.rows.forEach(row => {
+      tableRows.push([
+        row.um !== prevUM ? row.um : '',
+        row.desc,
+        String(row.cant),
+        row.peso % 1 === 0 ? String(row.peso) : row.peso.toFixed(2)
+      ]);
+      prevUM = row.um;
+    });
+    tableRows.push(['', 'Total general', String(r.totalCant), pesoStr]);
+
+    doc.autoTable({
+      head: [['U.M.', 'Descripción del ítem', 'Cant. comprom.', 'Peso']],
+      body: tableRows,
+      startY: 22,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 7, cellPadding: { top: 1.3, right: 1.3, bottom: 1.3, left: 1.3 }, font: 'helvetica', lineColor: 200, lineWidth: 0.1 },
+      headStyles: { fillColor: [255, 255, 255], textColor: 30, fontStyle: 'bold', halign: 'left', lineWidth: 0.3, lineColor: 80 },
+      columnStyles: {
+        0: { fontStyle: 'bold', textColor: [60, 60, 60], cellWidth: 12 },
+        1: { cellWidth: 'auto' },
+        2: { halign: 'right', cellWidth: 22 },
+        3: { halign: 'right', cellWidth: 20 }
+      },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      didParseCell: (data) => {
+        if (data.row.index === tableRows.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [240, 240, 240];
+          data.cell.styles.lineWidth = { top: 0.3 };
+          data.cell.styles.lineColor = [80, 80, 80];
+        }
+      },
+      didDrawPage: (data) => {
+        // Footer
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Pág. ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
+      }
+    });
+
+    await new Promise(r => setTimeout(r, 0)); // yield for UI
+  }
+
+  setProgress(100, 'Guardando PDF...');
+  await new Promise(r => setTimeout(r, 200));
+
+  const fecha = new Date().toISOString().slice(0,10);
+  doc.save(`Informes_VD_${fecha}_${cargues.length}cargues.pdf`);
+
+  document.getElementById('progressWrap').style.display = 'none';
+  showToast(`✅ PDF generado con ${cargues.length} cargues`);
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

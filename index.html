@@ -120,28 +120,71 @@
   }
   .filter-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
 
-  .cargues-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 8px; margin-top: 12px;
+  .cargues-grid, .extra-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 8px; margin-top: 10px;
   }
-  .cargue-chip {
-    display: flex; align-items: center; gap: 7px;
-    background: var(--bg); border: 1.5px solid var(--border);
-    border-radius: 8px; padding: 8px 11px; cursor: pointer;
-    font-size: 0.82rem; font-weight: 500; color: var(--text);
-    transition: all 0.15s; user-select: none;
+  .cargue-chip, .extra-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; cursor: pointer;
+    transition: all 0.2s ease; user-select: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
   }
-  .cargue-chip:hover { border-color: #94a3b8; }
-  .cargue-chip input[type=checkbox] { display: none; }
-  .cargue-chip.checked {
-    background: var(--accent-light); border-color: var(--accent); color: var(--primary);
+  .cargue-chip:hover, .extra-chip:hover {
+    border-color: #94a3b8; box-shadow: 0 3px 12px rgba(0,0,0,0.07);
   }
-  .cargue-chip .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #cbd5e1; flex-shrink: 0; transition: background 0.15s;
+  .cargue-chip input[type=checkbox], .extra-chip input[type=checkbox] {
+    accent-color: var(--accent); width: 17px; height: 17px;
+    cursor: pointer; flex-shrink: 0; margin: 0;
   }
-  .cargue-chip.checked .dot { background: var(--accent); }
+  .cargue-chip .chip-content, .extra-chip .chip-content {
+    display: flex; flex-direction: column; line-height: 1.35; min-width: 0;
+  }
+  .cargue-chip .chip-id, .extra-chip .extra-id {
+    font-weight: 600; font-size: 0.85rem; color: var(--text);
+  }
+  .cargue-chip .chip-rs, .extra-chip .extra-rs {
+    font-size: 0.7rem; color: var(--text-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cargue-chip.checked, .extra-chip.checked {
+    background: #eff6ff; border-color: var(--accent);
+  }
+  .cargue-chip.checked .chip-rs, .extra-chip.checked .extra-rs {
+    color: var(--accent);
+  }
+  .extra-chip .extra-rs { font-weight: 600; font-size: 0.85rem; }
+  .extra-chip .extra-id { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+  .extra-chip.checked .extra-id { color: var(--accent); }
 
+  .estados-checklist {
+    display: flex; flex-direction: column; gap: 4px; margin-top: 2px;
+  }
+  .estado-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 6px; border-radius: 5px; cursor: pointer;
+    font-size: 0.82rem; color: var(--text); user-select: none;
+    transition: background 0.1s;
+  }
+  .estado-item:hover { background: var(--accent-light); }
+  .estado-item input[type=checkbox] {
+    accent-color: var(--accent); cursor: pointer; margin: 0;
+  }
+
+  .font-control {
+    display: flex; align-items: center; gap: 8px; margin-top: 16px;
+    font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+  }
+  .section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0 4px; margin-bottom: 8px;
+  }
+  .section-header:first-of-type { padding-top: 0; }
+  .section-header span {
+    font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
 
   .btn {
@@ -277,9 +320,7 @@
     <div class="filters-row">
       <div class="filter-group">
         <label>Filtrar por Estado</label>
-        <select id="estadoFilter">
-          <option value="">Todos los estados</option>
-        </select>
+        <div class="estados-checklist" id="estadosContainer"></div>
       </div>
       <div class="filter-group">
         <label>Filtrar por Vendedor</label>
@@ -289,15 +330,32 @@
       </div>
     </div>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <span style="font-size:0.82rem; color:var(--text-muted);">Cargues disponibles</span>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-outline" style="padding:5px 12px; font-size:0.78rem;" onclick="selectAll()">Seleccionar todos</button>
-        <button class="btn btn-outline" style="padding:5px 12px; font-size:0.78rem;" onclick="deselectAll()">Limpiar</button>
+    <div style="margin-top:14px;margin-bottom:6px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="section-header">
+        <span>Columna extra (Cant/Uni)</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline" style="padding:3px 10px;font-size:0.72rem;" onclick="selectAllExtra()">Todos</button>
+          <button class="btn btn-outline" style="padding:3px 10px;font-size:0.72rem;" onclick="deselectAllExtra()">Ninguno</button>
+        </div>
       </div>
+      <div class="extra-grid" id="extraGrid"></div>
     </div>
 
-    <div class="cargues-grid" id="carguesGrid"></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="section-header">
+        <span>Cargues disponibles</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-outline" style="padding:5px 12px; font-size:0.78rem;" onclick="selectAll()">Seleccionar todos</button>
+          <button class="btn btn-outline" style="padding:5px 12px; font-size:0.78rem;" onclick="deselectAll()">Limpiar</button>
+        </div>
+      </div>
+
+    <div class="font-control">
+      <label>Tamaño letra:</label>
+      <button class="btn btn-outline" style="padding:4px 10px;font-size:0.8rem;" onclick="changeFontSize(-0.5)">−</button>
+      <span id="fontSizeLabel" style="font-size:0.85rem;font-weight:600;min-width:32px;text-align:center;display:inline-block">8</span>
+      <button class="btn btn-outline" style="padding:4px 10px;font-size:0.8rem;" onclick="changeFontSize(0.5)">+</button>
+    </div>
 
     <div class="actions">
       <button class="btn btn-primary" id="previewBtn" onclick="generatePreview()" disabled>
@@ -319,8 +377,10 @@
     <div class="section-title">3 · Vista previa de informes</div>
     <div class="report-nav" id="reportNav"></div>
     <div id="reportView"></div>
-  </div>
-</div>
+        </div>
+      </div>
+      <div class="cargues-grid" id="carguesGrid"></div>
+    </div>
 
 <div class="toast" id="toast"></div>
 
@@ -328,6 +388,9 @@
 let rawData = [];
 let allCargues = [];
 let selectedCargues = new Set();
+let selectedEstados = new Set();
+let selectedCarguesExtra = new Set();
+let fontSize = 8;
 
 // Drag & Drop
 const dropZone = document.getElementById('dropZone');
@@ -370,13 +433,19 @@ function handleFile(file) {
       const estados = [...new Set(rows.map(r => r['Estado movto.']).filter(Boolean))].sort();
       const vendedores = [...new Set(rows.map(r => r['Nombre vendedor']).filter(Boolean))].sort();
 
-      const estadoSel = document.getElementById('estadoFilter');
-      estadoSel.innerHTML = '<option value="">Todos los estados</option>' + estados.map(e => `<option>${e}</option>`).join('');
+      selectedEstados = new Set(estados);
+
+      const estadosContainer = document.getElementById('estadosContainer');
+      estadosContainer.innerHTML = estados.map(e => `
+        <label class="estado-item" id="echip-${e}">
+          <input type="checkbox" ${selectedEstados.has(e) ? 'checked' : ''} onchange="toggleEstado('${e}')">
+          ${e}
+        </label>
+      `).join('');
 
       const vendSel = document.getElementById('vendedorFilter');
       vendSel.innerHTML = '<option value="">Todos los vendedores</option>' + vendedores.map(v => `<option>${v}</option>`).join('');
 
-      estadoSel.addEventListener('change', refreshCargues);
       vendSel.addEventListener('change', refreshCargues);
 
       refreshCargues();
@@ -390,10 +459,9 @@ function handleFile(file) {
 }
 
 function getFilteredData() {
-  const estado = document.getElementById('estadoFilter').value;
   const vend = document.getElementById('vendedorFilter').value;
   return rawData.filter(r => {
-    if (estado && r['Estado movto.'] !== estado) return false;
+    if (selectedEstados.size > 0 && !selectedEstados.has(r['Estado movto.'])) return false;
     if (vend && r['Nombre vendedor'] !== vend) return false;
     return true;
   });
@@ -404,6 +472,25 @@ function refreshCargues() {
   allCargues = [...new Set(filtered.map(r => String(r['Cargue']).trim()))].sort();
   selectedCargues = new Set(allCargues);
   renderChips();
+  renderExtra();
+}
+
+function renderExtra() {
+  const data = getFilteredData();
+  const rsMap = {};
+  data.forEach(r => { rsMap[String(r['Cargue']).trim()] = r['Razón social cliente factura'] || ''; });
+  const grid = document.getElementById('extraGrid');
+  grid.innerHTML = allCargues.map(c => {
+    const rs = rsMap[c] || c;
+    const checked = selectedCarguesExtra.has(c);
+    return `<label class="extra-chip ${checked ? 'checked' : ''}" id="xchip-${c}">
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleExtra('${c}', this.checked)">
+      <div class="chip-content">
+        <span class="extra-rs">${rs}</span>
+        <span class="extra-id">${c}</span>
+      </div>
+    </label>`;
+  }).join('');
 }
 
 function renderChips() {
@@ -414,13 +501,28 @@ function renderChips() {
     document.getElementById('pdfBtn').disabled = true;
     return;
   }
-  grid.innerHTML = allCargues.map(c => `
-    <label class="cargue-chip ${selectedCargues.has(c) ? 'checked' : ''}" id="chip-${c}">
+  // Build cargue → razón social map
+  const data = getFilteredData();
+  const rsMap = {};
+  data.forEach(r => { rsMap[String(r['Cargue']).trim()] = r['Razón social cliente factura'] || ''; });
+  grid.innerHTML = allCargues.map(c => {
+    const rs = rsMap[c] || '';
+    return `<label class="cargue-chip ${selectedCargues.has(c) ? 'checked' : ''}" id="chip-${c}">
       <input type="checkbox" ${selectedCargues.has(c) ? 'checked' : ''} onchange="toggleCargue('${c}', this.checked)">
-      <div class="dot"></div>${c}
-    </label>
-  `).join('');
+      <div class="chip-content">
+        <span class="chip-id">${c}</span>
+        ${rs ? `<span class="chip-rs">${rs}</span>` : ''}
+      </div>
+    </label>`;
+  }).join('');
   updateButtons();
+}
+
+function toggleEstado(e) {
+  const checked = document.getElementById('echip-' + e).querySelector('input').checked;
+  if (checked) selectedEstados.add(e);
+  else selectedEstados.delete(e);
+  refreshCargues();
 }
 
 function toggleCargue(c, checked) {
@@ -434,6 +536,21 @@ function toggleCargue(c, checked) {
 function selectAll() { allCargues.forEach(c => selectedCargues.add(c)); renderChips(); }
 function deselectAll() { selectedCargues.clear(); renderChips(); }
 
+function toggleExtra(c, checked) {
+  if (checked) selectedCarguesExtra.add(c);
+  else selectedCarguesExtra.delete(c);
+  const chip = document.getElementById('xchip-' + c);
+  if (chip) chip.classList.toggle('checked', checked);
+}
+
+function selectAllExtra() { allCargues.forEach(c => selectedCarguesExtra.add(c)); renderExtra(); }
+function deselectAllExtra() { selectedCarguesExtra.clear(); renderExtra(); }
+
+function changeFontSize(delta) {
+  fontSize = Math.min(12, Math.max(6, fontSize + delta));
+  document.getElementById('fontSizeLabel').textContent = fontSize;
+}
+
 function updateButtons() {
   const ok = selectedCargues.size > 0;
   document.getElementById('previewBtn').disabled = !ok;
@@ -443,13 +560,21 @@ function updateButtons() {
 function buildReport(cargue) {
   const filtered = getFilteredData().filter(r => String(r['Cargue']).trim() === cargue);
 
+  const razonSocial = filtered.length > 0 ? (filtered[0]['Razón social cliente factura'] || '') : '';
+  const showRelacion = selectedCarguesExtra.has(cargue);
+
   // Group by UM + Desc. item, sum Cant. comprom. and Peso
   const groups = {};
   filtered.forEach(r => {
     const um = r['U.M.'] || '';
     const desc = r['Desc. item'] || '';
     const key = `${um}|||${desc}`;
-    if (!groups[key]) groups[key] = { um, desc, cant: 0, peso: 0 };
+    if (!groups[key]) {
+      groups[key] = { um, desc, cant: 0, peso: 0 };
+      if (showRelacion) {
+        groups[key].uniPresentacion = Number(r['uni_presentacion']) || 1;
+      }
+    }
     groups[key].cant += Number(r['Cant. comprom.'] || 0);
     groups[key].peso += Number(r['Peso'] || 0);
   });
@@ -460,10 +585,16 @@ function buildReport(cargue) {
     return a.desc.localeCompare(b.desc);
   });
 
+  if (showRelacion) {
+    rows.forEach(row => {
+      row.relacion = row.uniPresentacion > 0 ? Math.floor(row.cant / row.uniPresentacion) : 0;
+    });
+  }
+
   const totalCant = rows.reduce((s, r) => s + r.cant, 0);
   const totalPeso = rows.reduce((s, r) => s + r.peso, 0);
 
-  return { cargue, rows, totalCant, totalPeso, rawCount: filtered.length };
+  return { cargue, razonSocial, rows, totalCant, totalPeso, rawCount: filtered.length, showRelacion };
 }
 
 function generatePreview() {
@@ -500,6 +631,7 @@ function showReport(cargue, chipEl) {
     return `<tr>
       <td class="um">${showUM ? row.um : ''}</td>
       <td>${row.desc}</td>
+      ${r.showRelacion ? `<td class="num">${row.relacion % 1 === 0 ? row.relacion : row.relacion.toFixed(2)}</td>` : ''}
       <td class="num">${row.cant}</td>
       <td class="num">${row.peso % 1 === 0 ? row.peso : row.peso.toFixed(2)}</td>
     </tr>`;
@@ -509,7 +641,10 @@ function showReport(cargue, chipEl) {
     <div class="report-header">
       <div>
         <div class="cargue-label">📦 Cargue: ${r.cargue}</div>
-        <div class="summary">CONSOLIDADO · ${r.rows.length} ítems · ${r.rawCount} líneas de pedido</div>
+        <div class="summary">${r.rows.length} ítems · ${r.rawCount} líneas de pedido</div>
+      </div>
+      <div style="text-align:center;flex:1">
+        <div style="font-size:0.85rem;font-weight:600">${r.razonSocial}</div>
       </div>
       <div style="text-align:right">
         <div style="font-size:1.1rem;font-weight:700">${r.totalCant} unid.</div>
@@ -518,11 +653,11 @@ function showReport(cargue, chipEl) {
     </div>
     <div class="table-wrap">
       <table class="preview-table">
-        <thead><tr><th>U.M.</th><th>Desc. ítem</th><th class="num">Cant. comprom.</th><th class="num">Peso</th></tr></thead>
+        <thead><tr><th>U.M.</th><th>Desc. ítem</th>${r.showRelacion ? '<th class="num">Cant/Uni</th>' : ''}<th class="num">Cant. comprom.</th><th class="num">Peso</th></tr></thead>
         <tbody>
           ${rowsHTML}
           <tr class="total-row">
-            <td colspan="2">Total general</td>
+            <td colspan="${r.showRelacion ? 3 : 2}">Total general</td>
             <td class="num">${r.totalCant}</td>
             <td class="num">${r.totalPeso % 1 === 0 ? r.totalPeso : r.totalPeso.toFixed(2)}</td>
           </tr>
@@ -555,26 +690,31 @@ async function generatePDF() {
     doc.setLineWidth(0.5);
     doc.line(margin, 11, pageW - margin, 11);
 
+    const fs = fontSize;
+
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(fs + 3);
     doc.setTextColor(30);
     doc.text(`Cargue: ${r.cargue}`, margin, 9);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.text('CONSOLIDADO', margin, 13);
+    if (r.razonSocial) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(fs);
+      doc.setTextColor(30);
+      doc.text(r.razonSocial, pageW / 2, 9, { align: 'center' });
+    }
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(fs + 1.5);
     doc.text(`${r.totalCant} unid.`, pageW - margin, 9, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
+    doc.setFontSize(fs - 0.5);
     const pesoStr = r.totalPeso % 1 === 0 ? String(r.totalPeso) : r.totalPeso.toFixed(2);
-    doc.text(`${pesoStr} kg total`, pageW - margin, 13, { align: 'right' });
+    doc.text(`${pesoStr} kg total`, pageW - margin, 14.5, { align: 'right' });
 
     // Fecha/hora de impresión
     doc.setTextColor(100);
-    doc.setFontSize(6.5);
+    doc.setFontSize(fs - 0.5);
     const now = new Date();
     doc.text(`Generado: ${now.toLocaleDateString('es-CO')} ${now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`, margin, 18);
 
@@ -582,29 +722,42 @@ async function generatePDF() {
     const tableRows = [];
     let prevUM = null;
     r.rows.forEach(row => {
-      tableRows.push([
-        row.um !== prevUM ? row.um : '',
-        row.desc,
-        String(row.cant),
-        row.peso % 1 === 0 ? String(row.peso) : row.peso.toFixed(2)
-      ]);
+      const rowData = [row.um !== prevUM ? row.um : '', row.desc];
+      if (r.showRelacion) rowData.push(row.relacion % 1 === 0 ? String(row.relacion) : row.relacion.toFixed(2));
+      rowData.push(String(row.cant), row.peso % 1 === 0 ? String(row.peso) : row.peso.toFixed(2));
+      tableRows.push(rowData);
       prevUM = row.um;
     });
-    tableRows.push(['', 'Total general', String(r.totalCant), pesoStr]);
+    const totalRow = r.showRelacion ? ['', 'Total general', '', String(r.totalCant), pesoStr] : ['', 'Total general', String(r.totalCant), pesoStr];
+    tableRows.push(totalRow);
+
+    const headRow = r.showRelacion
+      ? ['U.M.', 'Descripción del ítem', 'Cant/Uni', 'Cant. comprom.', 'Peso']
+      : ['U.M.', 'Descripción del ítem', 'Cant. comprom.', 'Peso'];
+
+    const colStyles = r.showRelacion
+      ? {
+          0: { fontStyle: 'bold', textColor: [60, 60, 60], cellWidth: 12 },
+          1: { cellWidth: 'auto' },
+          2: { halign: 'right', cellWidth: 18 },
+          3: { halign: 'right', cellWidth: 20 },
+          4: { halign: 'right', cellWidth: 18 }
+        }
+      : {
+          0: { fontStyle: 'bold', textColor: [60, 60, 60], cellWidth: 12 },
+          1: { cellWidth: 'auto' },
+          2: { halign: 'right', cellWidth: 22 },
+          3: { halign: 'right', cellWidth: 20 }
+        };
 
     doc.autoTable({
-      head: [['U.M.', 'Descripción del ítem', 'Cant. comprom.', 'Peso']],
+      head: [headRow],
       body: tableRows,
-      startY: 22,
+      startY: 21.5,
       margin: { left: margin, right: margin },
-      styles: { fontSize: 7, cellPadding: { top: 1.3, right: 1.3, bottom: 1.3, left: 1.3 }, font: 'helvetica', lineColor: 200, lineWidth: 0.1 },
+      styles: { fontSize: fs, cellPadding: { top: 1.3, right: 1.3, bottom: 1.3, left: 1.3 }, font: 'helvetica', lineColor: 200, lineWidth: 0.1 },
       headStyles: { fillColor: [255, 255, 255], textColor: 30, fontStyle: 'bold', halign: 'left', lineWidth: 0.3, lineColor: 80 },
-      columnStyles: {
-        0: { fontStyle: 'bold', textColor: [60, 60, 60], cellWidth: 12 },
-        1: { cellWidth: 'auto' },
-        2: { halign: 'right', cellWidth: 22 },
-        3: { halign: 'right', cellWidth: 20 }
-      },
+      columnStyles: colStyles,
       alternateRowStyles: { fillColor: [248, 248, 248] },
       didParseCell: (data) => {
         if (data.row.index === tableRows.length - 1) {
@@ -617,7 +770,7 @@ async function generatePDF() {
       didDrawPage: (data) => {
         // Footer
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(fs + 1);
         doc.setTextColor(150);
         doc.text(`Pág. ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
       }
